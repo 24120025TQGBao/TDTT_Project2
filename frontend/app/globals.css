@@ -1,0 +1,223 @@
+:root {
+  color-scheme: light;
+  --bg: #f5efe5;
+  --paper: rgba(255, 252, 247, 0.92);
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --accent: #0f766e;
+  --accent-2: #d97706;
+  --border: rgba(31, 41, 55, 0.1);
+  --shadow: 0 20px 50px rgba(31, 41, 55, 0.08);
+  --error: #b91c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(217, 119, 6, 0.14), transparent 35%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 30%),
+    linear-gradient(180deg, #fffaf3 0%, var(--bg) 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.page {
+  width: min(1100px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.hero,
+.grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.76rem;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.subtitle,
+.panelCopy,
+.muted {
+  color: var(--muted);
+}
+
+.panel,
+.statusCard {
+  background: var(--paper);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.cardLabel {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-2);
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 41, 55, 0.14);
+  background: white;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(15, 118, 110, 0.25);
+}
+
+.userBox {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.summary {
+  display: grid;
+  gap: 14px;
+}
+
+.summary div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid rgba(31, 41, 55, 0.08);
+}
+
+.expenseList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.expenseList li {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid rgba(31, 41, 55, 0.08);
+}
+
+.expenseRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.expenseMeta {
+  display: grid;
+  gap: 4px;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: rgba(217, 119, 6, 0.12);
+  color: #92400e;
+}
+
+.message {
+  min-height: 24px;
+}
+
+.message.success,
+.message.info {
+  color: var(--accent);
+}
+
+.message.error {
+  color: var(--error);
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 24px, 1100px);
+    padding-top: 24px;
+  }
+
+  .panel,
+  .statusCard {
+    padding: 18px;
+    border-radius: 20px;
+  }
+}
