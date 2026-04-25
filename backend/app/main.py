@@ -11,10 +11,10 @@ from .schemas import ExpenseCreate, ExpenseRecord, ExpenseSummary, UserProfile
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, version="1.0.0")
+api = FastAPI(title=settings.app_name, version="1.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
+app = CORSMiddleware(
+    api,
     allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
@@ -22,27 +22,27 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@api.get("/")
 def root():
     return {"message": "Finance Manager API is running."}
 
 
-@app.get("/health")
+@api.get("/health")
 def health():
     return {"status": "ok"}
 
 
-@app.get("/auth/me", response_model=UserProfile)
+@api.get("/auth/me", response_model=UserProfile)
 def auth_me(current_user: UserProfile = Depends(get_current_user)):
     return current_user
 
 
-@app.post("/auth/verify", response_model=UserProfile)
+@api.post("/auth/verify", response_model=UserProfile)
 def auth_verify(current_user: UserProfile = Depends(get_current_user)):
     return current_user
 
 
-@app.post("/expenses", response_model=ExpenseRecord, status_code=201)
+@api.post("/expenses", response_model=ExpenseRecord, status_code=201)
 def create_expense(
     payload: ExpenseCreate,
     current_user: UserProfile = Depends(get_current_user),
@@ -70,7 +70,7 @@ def create_expense(
     return ExpenseRecord(id=doc_ref.id, created_at=created_at, **data)
 
 
-@app.get("/expenses", response_model=list[ExpenseRecord])
+@api.get("/expenses", response_model=list[ExpenseRecord])
 def list_expenses(current_user: UserProfile = Depends(get_current_user)):
     db = get_firestore_client()
     docs = (
@@ -100,7 +100,7 @@ def list_expenses(current_user: UserProfile = Depends(get_current_user)):
     return expenses
 
 
-@app.get("/expenses/summary", response_model=ExpenseSummary)
+@api.get("/expenses/summary", response_model=ExpenseSummary)
 def expenses_summary(current_user: UserProfile = Depends(get_current_user)):
     expenses = list_expenses(current_user)
     total_expense = sum(item.amount for item in expenses if item.type == "expense")

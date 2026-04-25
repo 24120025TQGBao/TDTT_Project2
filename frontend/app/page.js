@@ -1,28 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { initializeApp, getApps } from "firebase/app";
 import {
-  getAuth,
+  GoogleAuthProvider,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+import { auth, isFirebaseConfigured } from "../lib/firebase";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const EMPTY_SUMMARY = {
+  total_income: 0,
+  total_expense: 0,
+  balance: 0,
+};
+
+const EMPTY_EXPENSE_FORM = {
+  title: "",
+  amount: "",
+  category: "",
+  type: "expense",
+  note: "",
+};
+
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "select_account",
+});
 
 export default function HomePage() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -30,34 +39,57 @@ export default function HomePage() {
   const [healthStatus, setHealthStatus] = useState("Checking...");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("info");
-  const [summary, setSummary] = useState({
-    total_income: 0,
-    total_expense: 0,
-    balance: 0,
-  });
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [expenses, setExpenses] = useState([]);
+  const [isBusy, setIsBusy] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [expenseForm, setExpenseForm] = useState({
-    title: "",
-    amount: "",
-    category: "",
-    type: "expense",
-    note: "",
-  });
+  const [expenseForm, setExpenseForm] = useState(EMPTY_EXPENSE_FORM);
+
+  function showMessage(text, type) {
+    setMessage(text);
+    setMessageType(type);
+  }
+
+  function clearMessage() {
+    setMessage("");
+    setMessageType("info");
+  }
 
   useEffect(() => {
-    checkHealth();
+    async function loadHealth() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/health`, {
+          cache: "no-store",
+        });
+        const data = await response.json();
+        setHealthStatus(data.status === "ok" ? "Online" : "Unknown");
+      } catch {
+        setHealthStatus("Backend offline");
+      }
+    }
+
+    void loadHealth();
+  }, []);
+
+  useEffect(() => {
+    if (!auth) {
+      return undefined;
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setCurrentUser(null);
         setToken("");
-        resetDashboard();
+        setSummary(EMPTY_SUMMARY);
+        setExpenses([]);
         return;
       }
 
       const idToken = await user.getIdToken();
-      setCurrentUser(user);
+      setCurrentUser({
+        email: user.email,
+        uid: user.uid,
+      });
       setToken(idToken);
     });
 
@@ -69,18 +101,27 @@ export default function HomePage() {
       return;
     }
 
-    loadDashboard(token);
-  }, [token]);
+    async function fetchDashboard() {
+      try {
+        const [me, summaryData, expenseData] = await Promise.all([
+          apiFetch("/auth/me", token),
+          apiFetch("/expenses/summary", token),
+          apiFetch("/expenses", token),
+        ]);
 
-  async function checkHealth() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/health`);
-      const data = await response.json();
-      setHealthStatus(data.status === "ok" ? "Online" : "Unknown");
-    } catch {
-      setHealthStatus("Backend offline");
+        setCurrentUser((prev) => ({
+          email: me.email ?? prev?.email ?? "No email",
+          uid: me.uid,
+        }));
+        setSummary(summaryData);
+        setExpenses(expenseData);
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
     }
-  }
+
+    void fetchDashboard();
+  }, [token]);
 
   async function loadDashboard(authToken) {
     try {
@@ -90,15 +131,10 @@ export default function HomePage() {
         apiFetch("/expenses", authToken),
       ]);
 
-      setCurrentUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              email: me.email ?? prev.email,
-              uid: me.uid,
-            }
-          : me
-      );
+      setCurrentUser((prev) => ({
+        email: me.email ?? prev?.email ?? "No email",
+        uid: me.uid,
+      }));
       setSummary(summaryData);
       setExpenses(expenseData);
     } catch (error) {
@@ -110,6 +146,13 @@ export default function HomePage() {
     event.preventDefault();
     clearMessage();
 
+    if (!auth) {
+      showMessage("Firebase environment values are missing.", "error");
+      return;
+    }
+
+    setIsBusy(true);
+
     try {
       await signInWithEmailAndPassword(
         auth,
@@ -119,17 +162,53 @@ export default function HomePage() {
       showMessage("Login successful.", "success");
     } catch (error) {
       showMessage(error.message, "error");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    clearMessage();
+
+    if (!auth) {
+      showMessage("Firebase environment values are missing.", "error");
+      return;
+    }
+
+    setIsBusy(true);
+
+    try {
+      await signInWithPopup(auth, googleProvider);
+      showMessage("Google login successful.", "success");
+    } catch (error) {
+      if (error.code === "auth/popup-closed-by-user") {
+        showMessage("Google login was canceled.", "info");
+      } else {
+        showMessage(error.message, "error");
+      }
+    } finally {
+      setIsBusy(false);
     }
   }
 
   async function handleLogout() {
-    await signOut(auth);
-    showMessage("Logged out.", "success");
+    if (!auth) {
+      return;
+    }
+
+    setIsBusy(true);
+    try {
+      await signOut(auth);
+      showMessage("Logged out.", "success");
+    } finally {
+      setIsBusy(false);
+    }
   }
 
   async function handleExpenseSubmit(event) {
     event.preventDefault();
     clearMessage();
+    setIsBusy(true);
 
     const payload = {
       title: expenseForm.title.trim(),
@@ -145,63 +224,77 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setExpenseForm({
-        title: "",
-        amount: "",
-        category: "",
-        type: "expense",
-        note: "",
-      });
+      setExpenseForm(EMPTY_EXPENSE_FORM);
       showMessage("Transaction saved.", "success");
       await loadDashboard(token);
     } catch (error) {
       showMessage(error.message, "error");
+    } finally {
+      setIsBusy(false);
     }
-  }
-
-  function resetDashboard() {
-    setSummary({ total_income: 0, total_expense: 0, balance: 0 });
-    setExpenses([]);
-  }
-
-  function showMessage(text, type) {
-    setMessage(text);
-    setMessageType(type);
-  }
-
-  function clearMessage() {
-    setMessage("");
-    setMessageType("info");
   }
 
   return (
     <main className="page">
       <section className="hero">
-        <div>
-          <p className="eyebrow">Next.js + FastAPI + Firebase</p>
-          <h1>Simple Finance Manager</h1>
+        <div className="heroCopy">
+          <p className="eyebrow">Next.js 16 + FastAPI + Firebase</p>
+          <h1>Finance Manager</h1>
           <p className="subtitle">
-            Sign in with Firebase, add income or expenses, and read your saved
-            transactions from Firestore through FastAPI.
+            Authenticate with Firebase, post income and expenses through
+            FastAPI, and read your Firestore-backed transaction history from one
+            dashboard.
           </p>
         </div>
+
         <div className="statusCard">
-          <p className="cardLabel">Backend</p>
-          <p>{healthStatus}</p>
+          <p className="cardLabel">Backend Status</p>
+          <p className="statusValue">{healthStatus}</p>
+          <p className="muted">
+            API base: <code>{API_BASE_URL}</code>
+          </p>
           {currentUser ? (
-            <button type="button" className="ghost" onClick={handleLogout}>
+            <button
+              type="button"
+              className="ghost"
+              onClick={handleLogout}
+              disabled={isBusy}
+            >
               Logout
             </button>
           ) : null}
         </div>
       </section>
 
+      {!isFirebaseConfigured ? (
+        <section className="panel warningPanel">
+          <h2>Firebase config missing</h2>
+          <p className="panelCopy">
+            Copy <code>frontend/.env.local.example</code> to{" "}
+            <code>frontend/.env.local</code> and fill in the Firebase web app
+            values before logging in.
+          </p>
+        </section>
+      ) : null}
+
       <section className="grid">
         <article className="panel">
           <h2>Firebase Login</h2>
           <p className="panelCopy">
-            Use Email/Password that you enabled in Firebase Authentication.
+            Sign in with Google or use an Email/Password account from Firebase
+            Authentication.
           </p>
+          <div className="authActions">
+            <button
+              type="button"
+              className="secondaryButton"
+              onClick={handleGoogleLogin}
+              disabled={isBusy || !isFirebaseConfigured}
+            >
+              {isBusy ? "Please wait..." : "Continue with Google"}
+            </button>
+            <p className="muted authDivider">or use email and password</p>
+          </div>
           <form className="stack" onSubmit={handleLogin}>
             <label>
               Email
@@ -231,7 +324,9 @@ export default function HomePage() {
                 }
               />
             </label>
-            <button type="submit">Login</button>
+            <button type="submit" disabled={isBusy || !isFirebaseConfigured}>
+              {isBusy ? "Please wait..." : "Login"}
+            </button>
           </form>
           {currentUser ? (
             <div className="userBox">
@@ -317,10 +412,12 @@ export default function HomePage() {
                   }
                 />
               </label>
-              <button type="submit">Save transaction</button>
+              <button type="submit" disabled={isBusy}>
+                {isBusy ? "Saving..." : "Save transaction"}
+              </button>
             </form>
           ) : (
-            <p className="muted">Log in first to add data.</p>
+            <p className="muted">Log in first to add transactions.</p>
           )}
         </article>
       </section>
@@ -379,13 +476,21 @@ export default function HomePage() {
 }
 
 async function apiFetch(path, authToken, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      ...(options.headers || {}),
-      Authorization: `Bearer ${authToken}`,
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      cache: "no-store",
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${authToken}`,
+      },
+    });
+  } catch {
+    throw new Error(
+      "Network request failed. Check that the backend is running and CORS is configured for the frontend origin."
+    );
+  }
 
   if (!response.ok) {
     let detail = "Request failed.";
@@ -403,5 +508,5 @@ function formatCurrency(value) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(value);
+  }).format(value ?? 0);
 }
