@@ -67,7 +67,7 @@ def create_expense(
     }
     doc_ref.set(data)
 
-    return ExpenseRecord(id=doc_ref.id, created_at=created_at, **data)
+    return ExpenseRecord(id=doc_ref.id, **data)
 
 
 @api.get("/expenses", response_model=list[ExpenseRecord])

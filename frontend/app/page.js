@@ -254,14 +254,18 @@ export default function HomePage() {
             API base: <code>{API_BASE_URL}</code>
           </p>
           {currentUser ? (
-            <button
-              type="button"
-              className="ghost"
-              onClick={handleLogout}
-              disabled={isBusy}
-            >
-              Logout
-            </button>
+            <div className="signedInBox">
+              <p>{currentUser.email ?? "No email"}</p>
+              <p className="muted">UID: {currentUser.uid}</p>
+              <button
+                type="button"
+                className="ghost"
+                onClick={handleLogout}
+                disabled={isBusy}
+              >
+                Logout
+              </button>
+            </div>
           ) : null}
         </div>
       </section>
@@ -278,63 +282,59 @@ export default function HomePage() {
       ) : null}
 
       <section className="grid">
-        <article className="panel">
-          <h2>Firebase Login</h2>
-          <p className="panelCopy">
-            Sign in with Google or use an Email/Password account from Firebase
-            Authentication.
-          </p>
-          <div className="authActions">
-            <button
-              type="button"
-              className="secondaryButton"
-              onClick={handleGoogleLogin}
-              disabled={isBusy || !isFirebaseConfigured}
-            >
-              {isBusy ? "Please wait..." : "Continue with Google"}
-            </button>
-            <p className="muted authDivider">or use email and password</p>
-          </div>
-          <form className="stack" onSubmit={handleLogin}>
-            <label>
-              Email
-              <input
-                type="email"
-                required
-                value={loginForm.email}
-                onChange={(event) =>
-                  setLoginForm((prev) => ({
-                    ...prev,
-                    email: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              Password
-              <input
-                type="password"
-                required
-                value={loginForm.password}
-                onChange={(event) =>
-                  setLoginForm((prev) => ({
-                    ...prev,
-                    password: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <button type="submit" disabled={isBusy || !isFirebaseConfigured}>
-              {isBusy ? "Please wait..." : "Login"}
-            </button>
-          </form>
-          {currentUser ? (
-            <div className="userBox">
-              <p>{currentUser.email ?? "No email"}</p>
-              <p className="muted">UID: {currentUser.uid}</p>
+        {!currentUser ? (
+          <article className="panel">
+            <h2>Firebase Login</h2>
+            <p className="panelCopy">
+              Sign in with Google or use an Email/Password account from Firebase
+              Authentication.
+            </p>
+            <div className="authActions">
+              <button
+                type="button"
+                className="secondaryButton"
+                onClick={handleGoogleLogin}
+                disabled={isBusy || !isFirebaseConfigured}
+              >
+                {isBusy ? "Please wait..." : "Continue with Google"}
+              </button>
+              <p className="muted authDivider">or use email and password</p>
             </div>
-          ) : null}
-        </article>
+            <form className="stack" onSubmit={handleLogin}>
+              <label>
+                Email
+                <input
+                  type="email"
+                  required
+                  value={loginForm.email}
+                  onChange={(event) =>
+                    setLoginForm((prev) => ({
+                      ...prev,
+                      email: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  required
+                  value={loginForm.password}
+                  onChange={(event) =>
+                    setLoginForm((prev) => ({
+                      ...prev,
+                      password: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <button type="submit" disabled={isBusy || !isFirebaseConfigured}>
+                {isBusy ? "Please wait..." : "Login"}
+              </button>
+            </form>
+          </article>
+        ) : null}
 
         <article className="panel">
           <h2>Add Transaction</h2>

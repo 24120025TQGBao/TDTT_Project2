@@ -198,11 +198,18 @@ button:disabled {
   box-shadow: none;
 }
 
-.userBox {
+.signedInBox {
+  display: grid;
+  gap: 10px;
   margin-top: 16px;
   padding: 16px;
   border-radius: 16px;
   background: rgba(15, 118, 110, 0.08);
+}
+
+.signedInBox p {
+  margin-bottom: 0;
+  overflow-wrap: anywhere;
 }
 
 .summary {
