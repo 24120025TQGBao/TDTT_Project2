@@ -243,7 +243,7 @@ Each record stores:
 
 [![Video Demo](https://img.youtube.com/vi/uIIGWGud2uE/0.jpg)](https://youtu.be/uIIGWGud2uE)
 ```
-
+```
 ## Notes
 
 - Restart the frontend after changing `frontend/.env.local`.
