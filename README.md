@@ -241,10 +241,7 @@ Each record stores:
 
 ## 10. Video Demo
 
-Add your demo video link here before submitting:
-
-```text
-[VIDEO_DEMO_LINK_HERE](https://youtu.be/uIIGWGud2uE)
+[![Video Demo](https://img.youtube.com/vi/uIIGWGud2uE/0.jpg)](https://youtu.be/uIIGWGud2uE)
 ```
 
 ## Notes
