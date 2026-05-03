@@ -2,6 +2,12 @@
 
 Simple finance manager for `[LAB - 2] API FIREBASE.pdf`. The project is split into a Next.js frontend and a FastAPI backend, uses Firebase Authentication for login, and stores each user's income/expense records in Firestore.
 
+## Student Information
+
+Student ID: 24120025
+Student Full Name: Thiều Quới Gia Bảo
+Class: 24CTT5
+
 ## Lab Compliance
 
 | Requirement | Current implementation |
@@ -238,17 +244,8 @@ Each record stores:
 Add your demo video link here before submitting:
 
 ```text
-VIDEO_DEMO_LINK_HERE
+[VIDEO_DEMO_LINK_HERE](https://youtu.be/uIIGWGud2uE)
 ```
-
-The video should show:
-
-- Running the backend.
-- Running the frontend.
-- Firebase login.
-- Adding an income or expense.
-- Reading saved transactions from the UI.
-- Firestore data created for the signed-in user.
 
 ## Notes
 
